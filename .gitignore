@@ -119,3 +119,5 @@ ops.json
 *.jar
 usercache.json
 whitelist.json
+server.properties
+package-lock.json
