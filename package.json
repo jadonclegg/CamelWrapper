@@ -1,0 +1,25 @@
+{
+  "name": "camelwrapper",
+  "version": "2.0.0",
+  "description": "Companion wrapper to CamelBot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jkcoxson/CamelWrapper.git"
+  },
+  "keywords": [
+    "jkcoxson"
+  ],
+  "author": "jkcoxson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jkcoxson/CamelWrapper/issues"
+  },
+  "homepage": "https://github.com/jkcoxson/CamelWrapper#readme",
+  "dependencies": {
+    "child_process": "^1.0.2"
+  }
+}

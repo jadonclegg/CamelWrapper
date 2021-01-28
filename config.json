@@ -1,0 +1,5 @@
+{
+    "mother_port":30004,
+    "IP":"127.0.0.1",
+    "jarname":"fabric-server-launch.jar"
+}
