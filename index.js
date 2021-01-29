@@ -80,6 +80,9 @@ async function packetInterpreter(raw){
     if (packet.type=="command"){
         minecraft.stdin.write(packet.command)
     }
+    if (packet.type=="restart"){
+        restartMinecraft();
+    }
 }
 
 
@@ -127,6 +130,7 @@ const child_process = require('child_process');
 const { resolve } = require("path");
 const { rejects } = require("assert");
 const { Socket } = require("dgram");
+const { kill } = require("process");
 
 var minecraft = child_process.spawn('java', ['-Xmx4G','-Xms4G','-jar',config.jarname]); 
 minecraft.stdout.setEncoding("utf-8");
@@ -202,7 +206,50 @@ function minecraftGarbage(){
                 serverConnection.write(JSON.stringify(toSend));
             }
         }
+        if (data.toString().split(' ')[1]="[main/FATAL]:"&&data.toString().includes("Failed to start the minecraft server")){
+            console.log("Process already running, unleash the killer robots!"); // https://media.discordapp.net/attachments/775059056460824587/795869093978701834/unhoxi8s4d961.png?width=543&height=444
+            var killerRobot = child_process.spawn('ps',['-aux'])
+            killerRobot.stdout.setEncoding('utf-8');
+            killerRobot.stdout.on('data',(data)=>{
+                var rogueFound = false
+                for (var i = 0; i < data.toString().split('\n').length;i++){
+                    if (data.toString().split('\n')[i].includes('java -Xmx4G -Xms4G -jar '+config.jarname)){
+                        rogueFound=true
+                        var psLine=data.toString().split('\n')[i].split(' ')
+                        if (psLine[0]==''){
+                            psLine.splice(0,1)
+                        }
+                        psLine.splice(0,1)
+                        var pid =-1
+                        while (pid==-1){
+                            if (psLine[0]==''){
+                                psLine.splice(0,1)
+                            }else{
+                                pid=psLine.join(' ').split(' ')[0]
+                            }
+                        }
+                        if (!pid.includes(':')){
+                            child_process.exec('kill '+pid)
+                            console.log("Rogue server found and destroyed.")
+                            // Disarm the killer robots
+                            killerRobot.removeAllListeners();
+                            restartMinecraft();
+                        }
+                    }
+                }
+            });
+            
+        }
     });
+}
+
+function restartMinecraft(){
+    kill(minecraft.pid)
+    minecraft = null
+    minecraft = child_process.spawn('java', ['-Xmx4G','-Xms4G','-jar',config.jarname]); 
+    minecraft.stdout.setEncoding("utf-8");
+    minecraft.stdin.setEncoding("utf-8");
+    minecraftGarbage();
 }
 
 
@@ -219,3 +266,5 @@ function minecraftGarbage(){
 
 // [22:50:31] [Server thread/INFO]: <jkcoxson> Hello World!
 // 33
+
+// [22:53:04] [main/FATAL]: Failed to start the minecraft server
