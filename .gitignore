@@ -119,5 +119,5 @@ ops.json
 *.jar
 usercache.json
 whitelist.json
-server.properties
+server.*
 package-lock.json
