@@ -47,9 +47,11 @@ async function packetInterpreter(raw){
         return
     }
     if (packet.type=="playerList"){
+        var temp = await(getPlayersOnline())
+        console.log(temp)
         var toSend = {
             "packet":"playerlist",
-            "list":await(getPlayersOnline()).split('\n')
+            "list":temp.split('\n')
         }
         if (connected){
             serverConnection.write(JSON.stringify(toSend));
@@ -117,7 +119,7 @@ function serverGarbage(){
     serverConnection.on('connect',()=>{
         connected=true
         console.log("Connected to CamelBot")
-        sendMessage("yeet")
+        //sendMessage("yeet")
     });
 }
 
