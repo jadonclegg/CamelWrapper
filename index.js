@@ -157,7 +157,7 @@ async function getPlayerCoords(){
                     }
                 }
                 minecraftGarbage();
-                return resolve(toSend);
+                resolve(toSend);
             }
         });
     });
@@ -181,7 +181,7 @@ async function getPlayersOnline(){
                 }
                 // Take out the trash Eddy
                 minecraftGarbage();
-                return resolve(toSend);
+                resolve(toSend);
             }
         });
     });
