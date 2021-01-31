@@ -80,7 +80,7 @@ async function packetInterpreter(raw){
         }
     }
     if (packet.type=="command"){
-        minecraft.stdin.write(packet.command)
+        minecraft.stdin.write(packet.command.toString()+"\n")
     }
     if (packet.type=="restart"){
         restartMinecraft();
@@ -144,7 +144,7 @@ minecraftGarbage();
 
 async function getPlayerCoords(){
     return new Promise((resolve, reject) => {
-        minecraft.stdin.write('coordprint')
+        minecraft.stdin.write('coordprint\n')
         minecraft.stdout.on('data', async data =>{
             // This is called forever now... but it doesn't call new ones so little need to worry. 
             // It doesn't resolve unless a function is called.
@@ -166,10 +166,8 @@ async function getPlayerCoords(){
 
 async function getPlayersOnline(){
     return new Promise((resolve, reject) => {
-        minecraft.stdin.write('playerlist')
+        minecraft.stdin.write('playerlist\n')
         minecraft.stdout.on('data', async data =>{
-            // This is called forever now... but it doesn't call new ones so little need to worry. 
-            // It doesn't resolve unless a function is called.
             if (data.toString().split('\n')[1]=="playerlist"){
                 var toSend = "";
                 var splitData = data.toString().split('\n');
