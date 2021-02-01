@@ -244,6 +244,7 @@ function minecraftGarbage(){
 }
 
 function restartMinecraft(){
+    console.log("Restarting Minecraft...")
     kill(minecraft.pid)
     minecraft = null
     minecraft = child_process.spawn('java', ['-Xmx4G','-Xms4G','-jar',config.jarname]); 
