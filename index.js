@@ -134,7 +134,7 @@ const { rejects } = require("assert");
 const { Socket } = require("dgram");
 const { kill } = require("process");
 
-var minecraft = child_process.spawn('java', ['-Xmx4G','-Xms4G','-jar',config.jarname]); 
+var minecraft = child_process.spawn('java', ['server','-XX:ParallelGCThreads=8','-Xmx4G','-Xms8G','-jar',config.jarname]); 
 minecraft.stdout.setEncoding("utf-8");
 minecraft.stdin.setEncoding("utf-8");
 
