@@ -12,17 +12,28 @@ const config = require("./config.json");
 const Net = require('net');
 
 var serverConnection = new Net.Socket();
-
 var connected = false;
+var reconnector = null;
+setupServerEvents();
 
+reconnect();
+
+/**
+ * Connects to the CamelBot, and sets up event listeners for the server connection object.
+ */
 function connectToCamelBot() {
-    setupServerEvents();
     serverConnection.connect({
         port: config.mother_port,
         host: config.IP
     });
 }
 
+/**
+ * Sends a message to CamelBot through the server connection, if it's still connected.
+ * 
+ * @param {string} toSend message to send
+ * @returns {boolean} returns true if it sent, false if the server isn't connected.
+ */
 function sendMessage(toSend) {
     if (connected == true) {
         serverConnection.write(toSend);
@@ -32,6 +43,11 @@ function sendMessage(toSend) {
     }
 }
 
+/**
+ * Processes packets coming from CamelBot.
+ * 
+ * @param {string} raw raw string of data from CamelBot. *Should* be in JSON format.
+ */
 async function packetInterpreter(raw) {
     var packet = null
     try {
@@ -92,8 +108,9 @@ async function packetInterpreter(raw) {
     }
 }
 
-var reconnector;
-
+/**
+ * reconnect will try connecting to CamelBot every 10 seconds. The interval gets cleared once it's actually connected.
+ */
 function reconnect() {
     reconnector = setInterval(() => {
         if (connected == false) {
@@ -103,12 +120,8 @@ function reconnect() {
     }, 10000);
 }
 
-reconnect();
-
 // Once all listeners are removed, they must be called again.
 function setupServerEvents() {
-    serverConnection.removeAllListeners();
-
     serverConnection.on('close', () => {
         console.log("Connection to CamelBot lost, reconnecting.");
         connected = false;
@@ -117,6 +130,8 @@ function setupServerEvents() {
 
     serverConnection.on('error', (data) => {
         //console.log(data)
+        serverConnection.removeAllListeners();
+        setupServerEvents();
     });
 
     serverConnection.on('data', (data) => {
@@ -142,8 +157,13 @@ var minecraft = child_process.spawn('java', ['-server', '-XX:ParallelGCThreads=8
 minecraft.stdout.setEncoding("utf-8");
 minecraft.stdin.setEncoding("utf-8");
 
-minecraftGarbage();
+setupMinecraftListeners();
 
+/**
+ * getPlayerCoords sends a command to the minecraft process to get coordinates, and returns a Promise that contains the output.
+ * 
+ * @returns {Promise.<Array.<string>>} array of values to send to CamelBot.
+ */
 function getPlayerCoords() {
     return new Promise((resolve, reject) => {
         minecraft.stdin.write('coordprint\n');
@@ -169,7 +189,11 @@ function getPlayerCoords() {
     });
 }
 
-
+/**
+ * getPlayersOnline lists the players currently connected to the server.
+ * 
+ * @returns {Promise.<string>} String to send to CamelBot.
+ */
 function getPlayersOnline() {
     return new Promise((resolve, reject) => {
         minecraft.stdin.write('playerlist\n');
@@ -196,7 +220,10 @@ function getPlayersOnline() {
     });
 }
 
-function minecraftGarbage() {
+/**
+ * Sets up event listeners for the minecraft process.
+ */
+function setupMinecraftListeners() {
     minecraft.stdout.removeAllListeners();
     minecraft.stdout.on('data', async data => {
         console.log(data);
@@ -228,6 +255,11 @@ function minecraftGarbage() {
     });
 }
 
+/**
+ * Waits for the minecraft process to stop, and then resolves.
+ * 
+ * @returns {Promise.<void>} Doesn't return a value, just resolves when the minecraft process is ended.
+ */
 function waitForKilled() {
     return new Promise((resolve, reject) => {
         let int = setInterval(() => {
@@ -239,6 +271,9 @@ function waitForKilled() {
     });
 }
 
+/**
+ * kills and restarts the minecraft process.
+ */
 async function restartMinecraft() {
     console.log("Restarting Minecraft...")
     kill(minecraft.pid)
@@ -249,9 +284,8 @@ async function restartMinecraft() {
     minecraft = child_process.spawn('java', ['-Xmx4G', '-Xms4G', '-jar', config.jarname]);
     minecraft.stdout.setEncoding("utf-8");
     minecraft.stdin.setEncoding("utf-8");
-    minecraftGarbage();
+    setupMinecraftListeners();
 }
-
 
 
 // [22:45:23] [Server thread/INFO]: [STDOUT]:
