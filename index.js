@@ -14,6 +14,7 @@ const Net = require('net');
 var serverConnection = new Net.Socket();
 var connected = false;
 var reconnector = null;
+var disconnectSeen = false
 setupServerEvents();
 
 reconnect();
@@ -49,6 +50,10 @@ function sendMessage(toSend) {
  * @param {string} raw raw string of data from CamelBot. *Should* be in JSON format.
  */
 async function packetInterpreter(raw) {
+    if (disconnectSeen){
+        minecraft.stdin.write("tellraw @a \"CamelBot has reconnected, chat features are enabled.\"\n");
+    }
+    disconnectSeen = false
     var packet = null
     try {
         // If packet parses as JSON, continue. Otherwise exit
@@ -123,14 +128,18 @@ function reconnect() {
 function setupServerEvents() {
     serverConnection.on('close', () => {
         console.log("Connection to CamelBot lost, reconnecting.");
+        if (!disconnectSeen){
+            minecraft.stdin.write("tellraw @a \"CamelBot has disconnected, falling back to default chat\"\n");
+            disconnectSeen=true
+        }
         connected = false;
         reconnect();
     });
 
     serverConnection.on('error', (data) => {
         //console.log(data)
-        serverConnection.removeAllListeners();
-        setupServerEvents();
+        //serverConnection.removeAllListeners();
+        //setupServerEvents();
     });
 
     serverConnection.on('data', (data) => {
@@ -236,15 +245,18 @@ function setupMinecraftListeners() {
         }
 
         let splitData = data.toString().split(' ');
-        if (splitData[3].toString().startsWith('<')) {
+        if (splitData[4].toString().startsWith('<')) {
             var toSend = {
                 'packet': 'chat',
-                'sender': splitData[3].toString().split('<')[1].split('>')[0],
-                'message': splitData.splice(4, splitData.length).join(' ').split('\n')[0]
+                'sender': splitData[4].toString().split('<')[1].split('>')[0],
+                'message': splitData.splice(5, splitData.length).join(' ').split('\n')[0]
             }
 
             if (connected) {
                 serverConnection.write(JSON.stringify(toSend));
+            }else{
+                //Danger, CamelBot not connected so CamelWrapper must use backup chat.
+                minecraft.stdin.write("tellraw @a \"<" +toSend.sender+"> "+toSend.message+ "\"\n");
             }
         } else if (splitData[1] == "[main/FATAL]:" && data.toString().includes("Failed to start the minecraft server")) {
             console.log("Process already running, unleash the killer robots!"); // https://media.discordapp.net/attachments/775059056460824587/795869093978701834/unhoxi8s4d961.png?width=543&height=444
@@ -297,7 +309,7 @@ async function restartMinecraft() {
 // jkcoxson
 // 8675309
 
-// [22:50:31] [Server thread/INFO]: <jkcoxson> Hello World!
+// [10:14:04] [Server thread/INFO]: [STDOUT]: <jkcoxson> asdfasdfasdf
 // 33
 
 // [22:53:04] [main/FATAL]: Failed to start the minecraft server
