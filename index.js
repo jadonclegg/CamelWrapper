@@ -23,6 +23,11 @@ reconnect();
  * Connects to the CamelBot, and sets up event listeners for the server connection object.
  */
 function connectToCamelBot() {
+    serverConnection.removeAllListeners();
+
+    serverConnection = new Net.Socket();
+
+    setupServerEvents();
     serverConnection.connect({
         port: config.mother_port,
         host: config.IP
@@ -116,6 +121,8 @@ async function packetInterpreter(raw) {
  * reconnect will try connecting to CamelBot every 10 seconds. The interval gets cleared once it's actually connected.
  */
 function reconnect() {
+    connectToCamelBot();
+
     reconnector = setInterval(() => {
         if (connected == false) {
             //console.log("Attempting connection to CamelBot");
