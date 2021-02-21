@@ -13,11 +13,13 @@ const Net = require('net');
 
 var serverConnection = new Net.Socket();
 var connected = false;
+var tryReconnect = false;
 var reconnector = null;
 var disconnectSeen = false
 setupServerEvents();
 
-reconnect();
+//reconnect();
+connectToCamelBot();
 
 /**
  * Connects to the CamelBot, and sets up event listeners for the server connection object.
@@ -26,12 +28,16 @@ function connectToCamelBot() {
     serverConnection.removeAllListeners();
 
     serverConnection = new Net.Socket();
-
     setupServerEvents();
-    serverConnection.connect({
-        port: config.mother_port,
-        host: config.IP
-    });
+    try {
+        serverConnection.connect({
+            port: config.mother_port,
+            host: config.IP
+        });
+    } catch{
+
+    }
+    
 }
 
 /**
@@ -47,6 +53,57 @@ function sendMessage(toSend) {
     } else {
         return false
     }
+}
+
+/**
+ * reconnect will try connecting to CamelBot every 10 seconds. The interval gets cleared once it's actually connected.
+ */
+function reconnect() {
+    //console.log("reconnect")
+    //connectToCamelBot();
+
+    reconnector = setInterval(() => {
+        if (tryReconnect) {
+            // Do not attempt to call another connectToCamelBot(), will crash
+            tryReconnect =false
+            if (connected == false) {
+                //console.log("Attempting connection to CamelBot");
+                connectToCamelBot();
+            }
+        }
+        
+    }, 10000);
+}
+
+// Once all listeners are removed, they must be called again.
+function setupServerEvents() {
+    //console.log("setUpServerEvents")
+    serverConnection.on('close', () => {
+        console.log("Connection to CamelBot lost, reconnecting.");
+        if (!disconnectSeen){
+            minecraft.stdin.write("tellraw @a \"CamelBot has disconnected, falling back to default chat\"\n");
+            disconnectSeen=true
+        }
+        tryReconnect=true
+        connected = false;
+        reconnect();
+    });
+
+    serverConnection.on('error', (data) => {
+        //console.log(data)
+        serverConnection.removeAllListeners();
+        setupServerEvents();
+    });
+
+    serverConnection.on('data', (data) => {
+        packetInterpreter(data);
+    });
+
+    serverConnection.on('connect', () => {
+        connected = true;
+        clearInterval(reconnector);
+        console.log("Connected to CamelBot");
+    });
 }
 
 /**
@@ -117,49 +174,7 @@ async function packetInterpreter(raw) {
     }
 }
 
-/**
- * reconnect will try connecting to CamelBot every 10 seconds. The interval gets cleared once it's actually connected.
- */
-function reconnect() {
-    connectToCamelBot();
 
-    reconnector = setInterval(() => {
-        if (connected == false) {
-            //console.log("Attempting connection to CamelBot");
-            connectToCamelBot();
-        }
-    }, 10000);
-}
-
-// Once all listeners are removed, they must be called again.
-function setupServerEvents() {
-    serverConnection.on('close', () => {
-        console.log("Connection to CamelBot lost, reconnecting.");
-        if (!disconnectSeen){
-            minecraft.stdin.write("tellraw @a \"CamelBot has disconnected, falling back to default chat\"\n");
-            disconnectSeen=true
-        }
-        connected = false;
-        reconnect();
-    });
-
-    serverConnection.on('error', (data) => {
-        //console.log(data)
-        //serverConnection.removeAllListeners();
-        //setupServerEvents();
-    });
-
-    serverConnection.on('data', (data) => {
-        packetInterpreter(data);
-    });
-
-    serverConnection.on('connect', () => {
-        connected = true;
-        clearInterval(reconnector);
-        console.log("Connected to CamelBot");
-        //sendMessage("yeet")
-    });
-}
 
 // Wow, jkcoxson is the best
 
