@@ -62,7 +62,6 @@ async function packetInterpreter(raw) {
 
     if (packet.type == "playerList") {
         var temp = await (getPlayersOnline());
-        console.log(temp);
         var toSend = {
             "packet": "playerlist",
             "list": temp.split('\n')
@@ -173,7 +172,7 @@ function getPlayerCoords() {
                 var toSend = [];
                 var splitData = data.toString().split('\n');
                 for (var i = 2; i < splitData.length; i++) {
-                    if (splitData[i] !== '8675309') {
+                    if (splitData[i] !== '8675309'&&splitData[i].length>0) {
                         toSend.push(splitData[i]);
                     }
                 }
